@@ -31,3 +31,52 @@ These are the steps to be completed:
    1 mile squared = 2.5899 kilometers squared
 
 */
+
+/*
+Initial Table comments/thoughts
+
+* 'forest_area'
+
+The 'forest_area' table has 4 columns, which are:
+
+  1. country_code
+  2. country_name
+  3. year
+  4. forest_area_sqkm
+
+Now, at this stage I feel that the forest_area_sqkm column looks a bit untidy as
+the values are rounded off to 6 decimal places. For better visual clarity, I will
+ROUND these values to either 2 or 3 decimal places.
+
+From a quick SELECT * query, 'forest_area' has 5886 rows.
+
+
+* 'land_area'
+
+The 'land_area' table has 4 columns, which are:
+
+  1. country_code
+  2. country_name
+  3. year
+  4. land_area_sqmi
+
+As noted earlier, I need to convert the last column 'land_area_sqmi' into
+'land_area_sqkm' so that I can perform the necessary calculations correctly.
+
+Running another SELECT * query, this returns 5886 rows from the 'land_area' table
+
+
+* 'regions'
+
+The 'regions' table has 4 columns, which are:
+
+  1. country_name
+  2. country_code
+  3. region
+  4. income_group
+
+A SELECT * query shows that the 'regions' table has 219 rows in total.
+
+
+
+*/
