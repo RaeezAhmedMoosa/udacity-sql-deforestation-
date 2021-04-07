@@ -77,6 +77,34 @@ The 'regions' table has 4 columns, which are:
 
 A SELECT * query shows that the 'regions' table has 219 rows in total.
 
-
-
 */
+
+/*
+Creating the 'forestation' VIEW
+*/
+
+/*
+To make the calculations a bit easier (avoiding decimal values) and to make the
+columns a bit easier to read, I am using the ROUND function to round off the
+values for both forest area and land area to the nearest unit.
+*/
+
+/*
+This is the query rounding off the forest area.
+*/
+SELECT fa.country_code AS code,
+       fa.country_name AS country,
+       fa.year AS year,
+       ROUND(fa.forest_area_sqkm) AS forest_area_sq_km
+FROM forest_area fa
+LIMIT 100;
+
+/*
+This is the query rounding off the land area.
+*/
+SELECT la.country_code AS code,
+       la.country_name AS country,
+       la.year AS year,
+       ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km
+FROM land_area la
+LIMIT 100;
