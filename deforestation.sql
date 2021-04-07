@@ -188,3 +188,18 @@ SELECT country,
        forest_area_sq_km
 FROM forestation
 WHERE (year = 2016 AND country = 'World');
+
+
+
+/*
+1. GLOBAL SITUATION
+
+c. What was the change (in sq km) in the forest area of the world from 1990 to
+   2016?
+*/
+SELECT country,
+       year,
+       forest_area_sq_km,
+       COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change
+FROM forestation
+WHERE (year = 1990 OR year = 2016) AND (country = 'World');
