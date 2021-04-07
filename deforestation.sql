@@ -203,3 +203,19 @@ SELECT country,
        COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change
 FROM forestation
 WHERE (year = 1990 OR year = 2016) AND (country = 'World');
+
+
+
+/*
+1. GLOBAL SITUATION
+
+d.  What was the percent change in forest area of the world between 1990 and
+    2016?
+*/
+SELECT country,
+       year,
+       forest_area_sq_km,
+       COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change,
+       ((COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0)) / forest_area_sq_km) * 100 AS change_percentage
+FROM forestation
+WHERE (year = 1990 OR year = 2016) AND (country = 'World');
