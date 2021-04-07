@@ -144,7 +144,7 @@ ORDER BY 2, 4
 LIMIT 100;
 
 /*
-This is the first step completed. This is the 'forestation' VIEW. To
+This is the first step completed. This is the 'forestation' VIEW.
 */
 CREATE VIEW forestation AS
 SELECT la.country_code AS code,
@@ -278,3 +278,83 @@ WHERE total_area_sq_km <= (
 )
 AND year = 2016
 ORDER BY 3 DESC;
+
+
+
+/*
+2. REGIONAL OUTLOOK
+
+a. What was the percent forest of the entire world in 2016? Which region had the
+   HIGHEST percent forest in 2016, and which had the LOWEST, to 2 decimal places?
+*/
+
+/*
+Question 2(a) can be broken down into 3 sub questions, firstly the percentage of
+forest for the world, secondly region with the highest percentage of forest (2
+decimal places) and lastly the region with the lowest percentage of forest (2
+decimal places).
+*/
+
+/*
+This query calculates the total forest and land areas per region and returns the
+values, filtered to include only the 2016 values. This specific query also
+filters the results further by only returning the data for the 'World'
+*/
+SELECT region,
+       year,
+       SUM(forest_area_sq_km) AS forest_area_sum,
+       SUM(total_area_sq_km) AS land_area_sum,
+       (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+FROM forestation
+WHERE year = 2016 AND region = 'World'
+GROUP BY 1, 2
+ORDER BY 1, 2
+
+/*
+This query utilises the query above in the form of a Common Table Expression
+(CTE). By using the subquery in the CTE, the main query identifies the region
+with the highest forest area in 2016 by limiting the results to 1 row and sorting
+the results in descending order according to 'forest_percentage'.
+*/
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  WHERE year = 2016
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       forest_percentage
+FROM region_sum
+WHERE region != 'World'
+ORDER BY 3 DESC
+LIMIT 1;
+
+/*
+Similar to the query above, this specific query identifies the region with the
+lowest forest area in 2016. This is done by limiting the results to 1 row and
+sorting the 'forest_percentage' column in ascending (default) order.
+*/
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  WHERE year = 2016
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       forest_percentage
+FROM region_sum
+WHERE region != 'World'
+ORDER BY 3
+LIMIT 1;
