@@ -219,3 +219,62 @@ SELECT country,
        ((COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0)) / forest_area_sq_km) * 100 AS change_percentage
 FROM forestation
 WHERE (year = 1990 OR year = 2016) AND (country = 'World');
+
+
+
+/*
+1. GLOBAL SITUATION
+
+e. If you compare the amount of forest area lost between 1990 and 2016, to which
+   country's total area in 2016 is it closest to?
+*/
+
+/*
+Working with the query above in Question 1(c), I first have to change the value
+returned in 1(c) to a positive value so that the query below can return an integer
+that is positive.
+
+To eliminate the 0 value returned in 1(c), and to incorporate this query as a
+scalar subquery as part of the Outer Query, this query filters the values to
+only return a negative value. This negative value is then converted into a
+positive value using the ABS function.
+*/
+SELECT ABS(change) AS change
+FROM (
+  SELECT country,
+         year,
+         forest_area_sq_km,
+         COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change
+  FROM forestation
+  WHERE (year = 1990 OR year = 2016) AND (country = 'World')
+) sub
+WHERE change < 0;
+
+
+/*
+The Outer Query below returns a list of countries, sorted by 'total_area_sq_km'
+in descending order. To get the latest results, the year is filtered to return
+only the values for 2016.
+
+The subquery written above is used as a Scalar Subquery here to filter all the
+countries out that have a total land area greater than the amount of forest area
+lost in the 27 period of the data.
+*/
+SELECT country,
+       year,
+       total_area_sq_km
+FROM forestation
+WHERE total_area_sq_km <= (
+  SELECT ABS(change) AS change
+  FROM (
+    SELECT country,
+           year,
+           forest_area_sq_km,
+           COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change
+    FROM forestation
+    WHERE (year = 1990 OR year = 2016) AND (country = 'World')
+  ) sub
+  WHERE change < 0
+)
+AND year = 2016
+ORDER BY 3 DESC;
