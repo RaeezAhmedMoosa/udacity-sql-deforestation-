@@ -108,3 +108,17 @@ SELECT la.country_code AS code,
        ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km
 FROM land_area la
 LIMIT 100;
+
+
+
+SELECT la.country_code AS code,
+       la.country_name AS country,
+       la.year AS year,
+       ROUND(fa.forest_area_sqkm) AS forest_area_sq_km,
+       ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
+       ROUND((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
+FROM land_area la
+JOIN forest_area fa
+ON la.country_code = fa.country_code AND la.year = fa.year
+ORDER BY 2, 3
+LIMIT 100;
