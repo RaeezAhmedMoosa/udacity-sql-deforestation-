@@ -175,3 +175,16 @@ SELECT country,
        forest_area_sq_km,
 FROM forestation
 WHERE (year = 1990 AND country = 'World');
+
+
+
+/*
+1. GLOBAL SITUATION
+
+b. What was the total forest area (in sq km) of the world in 2016?
+*/
+SELECT country,
+       year,
+       forest_area_sq_km
+FROM forestation
+WHERE (year = 2016 AND country = 'World');
