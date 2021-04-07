@@ -306,15 +306,29 @@ SELECT region,
        SUM(total_area_sq_km) AS land_area_sum,
        (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
 FROM forestation
-WHERE year = 2016 AND region = 'World'
 GROUP BY 1, 2
-ORDER BY 1, 2
+
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
+FROM region_sum
+WHERE (year = 2016 AND region = 'World')
 
 /*
-This query utilises the query above in the form of a Common Table Expression
-(CTE). By using the subquery in the CTE, the main query identifies the region
-with the highest forest area in 2016 by limiting the results to 1 row and sorting
-the results in descending order according to 'forest_percentage'.
+This query utilises the first query above in the form of a Common Table
+Expression (CTE). By using the subquery in the CTE, the main query identifies
+the region with the highest forest area in 2016 by limiting the results to 1 row
+and sorting the results in descending order according to 'forest_percentage'.
 */
 WITH region_sum AS
 (
@@ -340,7 +354,7 @@ Similar to the query above, this specific query identifies the region with the
 lowest forest area in 2016. This is done by limiting the results to 1 row and
 sorting the 'forest_percentage' column in ascending (default) order.
 */
-WITH region_sum AS
+WITH region_16 AS
 (
   SELECT region,
          year,
@@ -354,7 +368,7 @@ WITH region_sum AS
 SELECT region,
        year,
        ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
-FROM region_sum
+FROM region_16
 WHERE region != 'World'
 ORDER BY 3
 LIMIT 1;
@@ -364,3 +378,114 @@ specific question, Question 2(a). To solve this, I used the CAST data cleaning
 function to convert the existing numeric values (double precision) into a
 decimal value type and it is now possible to round off to 2 decimal places.
 */
+
+
+
+/*
+2. REGIONAL OUTLOOK
+
+b. What was the percent forest of the entire world in 1990? Which region had the
+   HIGHEST percent forest in 1990, and which had the LOWEST, to 2 decimal places?
+*/
+
+/*
+Similar to Question 2(a) above, this question can also be broken down into 3
+sub questions:
+
+(b)(i) What was the percent forest of the entire world in 1990?
+
+(b)(ii) Which region had the HIGHEST percent forest in 1990, to 2 decimal places
+
+(b)(iii) Which region had the LOWEST percent forest in 1990, to 2 decimal places
+*/
+
+
+
+/*
+This query calculates the total forest and land areas per region and returns the
+values for each year per region.
+*/
+SELECT region,
+       year,
+       SUM(forest_area_sq_km) AS forest_area_sum,
+       SUM(total_area_sq_km) AS land_area_sum,
+       (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+FROM forestation
+GROUP BY 1, 2
+ORDER BY 1, 2
+
+/*
+Question 2(b)(i)
+
+This query uses the query above in the form of a CTE. Using the subquery, this
+specific query identifies the total forest area of the world in 1990. This is
+achieved by filtering via a WHERE clause where the year is filtered to 1990 and
+the region is filtered to 'World'.
+*/
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
+FROM region_sum
+WHERE (year = 1990 AND region = 'World')
+
+
+
+/*
+Question 2(b)(ii)
+
+Similar to the query in Question 2(b)(i) above, this query uses the same CTE.
+The table that is returned lists the region with their respective forest_percentage
+area, in descending order.
+*/
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
+FROM region_sum
+WHERE year = 1990
+ORDER BY 3 DESC;
+
+
+
+/*
+Question 2(b)(iii)
+
+Similar to the query in Question 2(b)(i) above, this query uses the same CTE.
+The table that is returned lists the region with their respective forest_percentage
+area, in ascending (default) order.
+*/
+WITH region_sum AS
+(
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  GROUP BY 1, 2
+)
+SELECT region,
+       year,
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
+FROM region_sum
+WHERE year = 1990
+ORDER BY 3;
