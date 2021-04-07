@@ -160,3 +160,18 @@ JOIN forest_area fa
 ON la.country_code = fa.country_code AND la.year = fa.year
 JOIN regions rg
 ON rg.country_code = la.country_code;
+
+
+
+/*
+1. GLOBAL SITUATION
+
+a. What was the total forest area (in sq km) of the world in 1990?
+   Please keep in mind that you can use the country record denoted as “World"
+   in the region table.
+*/
+SELECT country,
+       year,
+       forest_area_sq_km,
+FROM forestation
+WHERE (year = 1990 AND country = 'World');
