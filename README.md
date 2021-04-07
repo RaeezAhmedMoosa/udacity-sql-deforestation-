@@ -3,7 +3,7 @@
 This is a **SQL**-based project which focuses on the issue of deforestation. This
 project is part of the Udacity "SQL" nanodegree program. This repo consists
 of the actual **SQL** code that is used for the project and the written **Report**
-that is to be submitted, which contains all the **SQL** as an _Appendix_.
+that is to be submitted, which contains all the **SQL** code as an _Appendix_.
 
 ## Installation
 ### Non-GitHub Users
