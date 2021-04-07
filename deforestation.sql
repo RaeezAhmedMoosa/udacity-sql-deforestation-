@@ -329,7 +329,7 @@ WITH region_sum AS
 )
 SELECT region,
        year,
-       ROUND(CAST(forest_percentage AS decimal), 2)
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
 FROM region_sum
 WHERE region != 'World'
 ORDER BY 3 DESC
@@ -353,7 +353,7 @@ WITH region_sum AS
 )
 SELECT region,
        year,
-       ROUND(CAST(forest_percentage AS decimal), 2)
+       ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
 FROM region_sum
 WHERE region != 'World'
 ORDER BY 3
