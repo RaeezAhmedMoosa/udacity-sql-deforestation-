@@ -329,7 +329,7 @@ WITH region_sum AS
 )
 SELECT region,
        year,
-       forest_percentage
+       ROUND(CAST(forest_percentage AS decimal), 2)
 FROM region_sum
 WHERE region != 'World'
 ORDER BY 3 DESC
@@ -353,8 +353,14 @@ WITH region_sum AS
 )
 SELECT region,
        year,
-       forest_percentage
+       ROUND(CAST(forest_percentage AS decimal), 2)
 FROM region_sum
 WHERE region != 'World'
 ORDER BY 3
 LIMIT 1;
+/*
+Note that I was struggling to round off to decimal places earlier for this
+specific question, Question 2(a). To solve this, I used the CAST data cleaning
+function to convert the existing numeric values (double precision) into a
+decimal value type and it is now possible to round off to 2 decimal places.
+*/
