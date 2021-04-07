@@ -110,7 +110,10 @@ FROM land_area la
 LIMIT 100;
 
 
-
+/*
+This is a test query that focused on returning the forest percentage as a new
+column, which will be incorporated in the final VIEW table.
+*/
 SELECT la.country_code AS code,
        la.country_name AS country,
        la.year AS year,
@@ -122,3 +125,38 @@ JOIN forest_area fa
 ON la.country_code = fa.country_code AND la.year = fa.year
 ORDER BY 2, 3
 LIMIT 100;
+
+
+SELECT la.country_code AS code,
+       la.country_name AS country,
+       rg.region AS region,
+       rg.income_group AS income_group,
+       la.year AS year,
+       ROUND(fa.forest_area_sqkm) AS forest_area_sq_km,
+       ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
+       ROUND((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
+FROM land_area la
+JOIN forest_area fa
+ON la.country_code = fa.country_code AND la.year = fa.year
+JOIN regions rg
+ON rg.country_code = la.country_code
+ORDER BY 2, 4
+LIMIT 100;
+
+/*
+This is the first step completed. This is the 'forestation' VIEW. To
+*/
+CREATE VIEW forestation AS
+SELECT la.country_code AS code,
+       la.country_name AS country,
+       rg.region AS region,
+       rg.income_group AS income_group,
+       la.year AS year,
+       ROUND(fa.forest_area_sqkm) AS forest_area_sq_km,
+       ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
+       ROUND((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
+FROM land_area la
+JOIN forest_area fa
+ON la.country_code = fa.country_code AND la.year = fa.year
+JOIN regions rg
+ON rg.country_code = la.country_code;
