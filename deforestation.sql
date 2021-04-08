@@ -156,9 +156,9 @@ SELECT la.country_code AS code,
        ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
        ROUND((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
 FROM land_area la
-JOIN forest_area fa
+FULL OUTER JOIN forest_area fa
 ON la.country_code = fa.country_code AND la.year = fa.year
-JOIN regions rg
+FULL OUTER JOIN regions rg
 ON rg.country_code = la.country_code;
 
 
@@ -596,3 +596,208 @@ SELECT region,
        (PARTITION BY region ORDER BY forest_percentage) AS change
 FROM region_percent
 ORDER BY 1, 2
+
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+*/
+SELECT country,
+       year,
+       forest_area_sq_km AS forest_area_1990
+FROM forestation f90
+WHERE (year = 1990)
+ORDER BY 1, 2;
+
+
+SELECT country,
+       year,
+       forest_area_sq_km AS forest_area_2016
+FROM forestation
+WHERE (year = 2016)
+ORDER BY 1, 2;
+
+SELECT country,
+       year,
+       forest_area_sq_km AS forest_area_1990
+FROM forestation
+WHERE (year = 1990)
+
+UNION
+
+SELECT country,
+       year,
+       forest_area_sq_km AS forest_area_2016
+FROM forestation
+WHERE (year = 2016)
+
+ORDER BY 1, 2;
+
+
+SELECT f90.country,
+       f90.year,
+       f90.forest_area_sq_km AS forest_area_1990,
+       f16.year,
+       f16.forest_area_sq_km AS forest_area_2016
+FROM forestation f90
+LEFT JOIN forestation f16
+ON f90.country = f16.country
+WHERE (f90.year = 1990) AND (f16.year = 2016)
+ORDER BY 1, 2
+
+/*
+This query contains a Self JOIN which is used in order to make it easier to
+calculate the difference between the forest area between 1990 and 2016.
+*/
+SELECT f90.country AS country,
+       f90.forest_area_sq_km AS forest_area_1990,
+       f16.forest_area_sq_km AS forest_area_2016
+FROM forestation f90
+LEFT JOIN forestation f16
+ON f90.country = f16.country
+WHERE (f90.year = 1990) AND (f16.year = 2016)
+ORDER BY 1, 2
+
+/*
+This query uses the above query as an Inline Subquery to calculate the change in
+(or difference) in forest area between 1990 and 2016.
+
+Calculating the change in this manner is ideal because the returned value can be
+negative, NULL, 0 (such as Afghanistan) or positive.
+*/
+SELECT country,
+       forest_area_2016 -forest_area_1990 AS change
+FROM (
+  SELECT f90.country,
+         f90.forest_area_sq_km AS forest_area_1990,
+         f16.forest_area_sq_km AS forest_area_2016
+  FROM forestation f90
+  LEFT JOIN forestation f16
+  ON f90.country = f16.country
+  WHERE (f90.year = 1990) AND (f16.year = 2016)
+) sub
+ORDER BY 1;
+
+/*
+This query leverages the query above in the form of a CTE. The query returns a
+table which pulls the 'change' value from the CTE. Using these 'change' values,
+the query then uses a Ranking Window function to rank the countries according to
+their 'change' values.
+
+ROW_NUMBER() is used here as it's unlikely that that there will be any identical
+'change' values. To eliminate countries where there was no data available to
+calculate the 'change' value (such as Kosovo), the 'change' value is filtered to
+exclude any 'change' values that are NULL.
+
+This particular query is used to provide information regarding '3.1 Success
+Stories' within the report. This is evident as the ranking is sorted in
+descending order.
+*/
+WITH fadc AS
+(
+  SELECT country,
+         forest_area_2016 -forest_area_1990 AS change
+  FROM (
+    SELECT f90.country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f16.forest_area_sq_km AS forest_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+)
+SELECT country,
+       change,
+       ROW_NUMBER() OVER (ORDER BY change DESC) AS ranking
+FROM fadc
+WHERE (change IS NOT NULL) AND (country != 'World')
+
+/*
+This query is used to provide the numerical information for the total land area
+for China and the USA for footnote 2 within the report.
+*/
+SELECT country,
+       year,
+       total_area_sq_km
+FROM forestation
+WHERE (country = 'China' OR country = 'United States') AND (year =2016)
+ORDER BY 1, 2
+
+/*
+This query includes the land area of each country as well as a column which
+returns the percentage of forest area for each country. This is an interim
+query which will be used as part of a larger query to extract the information
+needed to complete the '3.1 Success Stories' section of the report.
+*/
+SELECT f90.country AS country,
+       f90.forest_area_sq_km AS forest_area_1990,
+       f90.total_area_sq_km AS land_area_1990,
+       (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+       f16.forest_area_sq_km AS forest_area_2016,
+       (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+       f16.total_area_sq_km AS land_area_2016
+FROM forestation f90
+LEFT JOIN forestation f16
+ON f90.country = f16.country
+WHERE (f90.year = 1990) AND (f16.year = 2016)
+ORDER BY 1
+
+/*
+This query uses the above query as an Inline Subquery. The query returns the
+percentage change (difference) between 1990 and 2016. To make the ROUND function
+useable, the difference value is converted into a decimal data type. This query
+as a whole is the Inner Query to be used in the queries where the RANKING of
+countries according to the percentage change will be required.
+*/
+SELECT sub.country AS country,
+       ROUND(CAST(forest_percentage_2016 - forest_percentage_1990 AS decimal), 2) AS percent_change
+FROM (
+  SELECT f90.country AS country,
+         f90.forest_area_sq_km AS forest_area_1990,
+         f90.total_area_sq_km AS land_area_1990,
+         (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+         f16.forest_area_sq_km AS forest_area_2016,
+         (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+         f16.total_area_sq_km AS land_area_2016
+  FROM forestation f90
+  LEFT JOIN forestation f16
+  ON f90.country = f16.country
+  WHERE (f90.year = 1990) AND (f16.year = 2016)
+) sub
+ORDER BY 1
+
+/*
+This query uses the above query as a CTE in order to return a ranking of the
+countries, as per their percentage change in forest area over the 27 years. The
+RANK() function is used here, as it is possible to have values that overlap. The
+ranking is sorted in descending order to identify the country that had the best
+percentage increase in terms of forest area.
+
+To clear the rankings of countries with NULL values and/or no values, the data
+is filtered to exclude NULL values and also excludes the 'World' as a country.
+The CTE name 'fapc' stands for 'forest_area_percentage_change'.
+*/
+WITH fapc AS
+(
+  SELECT sub.country AS country,
+         ROUND(CAST(forest_percentage_2016 - forest_percentage_1990 AS decimal), 2) AS percent_change
+  FROM (
+    SELECT f90.country AS country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f90.total_area_sq_km AS land_area_1990,
+           (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+           f16.forest_area_sq_km AS forest_area_2016,
+           (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+           f16.total_area_sq_km AS land_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+)
+SELECT country,
+       percent_change,
+       RANK() OVER (ORDER BY percent_change DESC) AS percent_ranking
+FROM fapc
+WHERE (percent_change IS NOT NULL) AND (country != 'World')
