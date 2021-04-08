@@ -489,3 +489,110 @@ SELECT region,
 FROM region_sum
 WHERE year = 1990
 ORDER BY 3;
+
+
+
+/*
+2. REGIONAL OUTLOOK
+
+c. Based on the table you created, which regions of the world DECREASED in
+   forest area from 1990 to 2016?
+*/
+
+/*
+I need to use a PARTITION BY clause in this question in order to solve this
+problem correctly.
+*/
+
+/*
+This specific query is an interim query which will be used later in this question
+as a subquery within a CTE. This query refines the data by returning the forest
+area percentage as a decimal value rounded to 2 decimal places. It returns the
+values for 1990 and 2016.
+
+This query is one of the interim steps in calculating the LAG/LEAD difference in
+a later query which will answer the question at hand. This query provides the
+starting values for both years, which are needed for the LAG/LEAD functions.
+*/
+SELECT sub.region AS region,
+       sub.year AS year,
+       ROUND(CAST(sub.forest_percentage AS decimal), 2) AS forest_percentage
+FROM (
+  SELECT region,
+         year,
+         SUM(forest_area_sq_km) AS forest_area_sum,
+         SUM(total_area_sq_km) AS land_area_sum,
+         (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+  FROM forestation
+  GROUP BY 1, 2
+) sub
+WHERE (sub.year = 1990 OR sub.year = 2016)
+ORDER BY 1, 2
+
+/*
+This query uses the table in the CTE to return the LAG value for each row and
+it also calculates the LAG Difference by subtracting the LAG value from the
+current row value. To avoid NULL data types, I have modified the LAG function to
+return a '0' string where there is no LAG value for a current row (ie the firstl
+row).
+
+This query is implemented to test that the LAG function returns the correct
+values and also to test and verify the LAG difference calculation.
+*/
+WITH region_percent AS
+(
+  SELECT sub.region AS region,
+         sub.year AS year,
+         ROUND(CAST(sub.forest_percentage AS decimal), 2) AS forest_percentage
+  FROM (
+    SELECT region,
+           year,
+           SUM(forest_area_sq_km) AS forest_area_sum,
+           SUM(total_area_sq_km) AS land_area_sum,
+           (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+    FROM forestation
+    GROUP BY 1, 2
+  ) sub
+  WHERE (sub.year = 1990 OR sub.year = 2016)
+)
+SELECT region,
+       year,
+       forest_percentage,
+       LAG(forest_percentage, 1, '0') OVER
+       (PARTITION BY region ORDER BY forest_percentage) AS lag_value,
+       forest_percentage - LAG(forest_percentage) OVER
+       (PARTITION BY region ORDER BY forest_percentage) AS lag_difference
+FROM region_percent
+ORDER BY 1, 2
+
+/*
+This is the final query for this question. It's similar to the query above. The
+LAG value column is removed as it's not necessary to be displayed for a user.
+
+If the LAG difference value is displayed in the 2016 row, then this is a positive
+value. If the LAG difference value is displayed in the 1990 row, then this is a
+negative value.
+*/
+WITH region_percent AS
+(
+  SELECT sub.region AS region,
+         sub.year AS year,
+         ROUND(CAST(sub.forest_percentage AS decimal), 2) AS forest_percentage
+  FROM (
+    SELECT region,
+           year,
+           SUM(forest_area_sq_km) AS forest_area_sum,
+           SUM(total_area_sq_km) AS land_area_sum,
+           (SUM(forest_area_sq_km)/SUM(total_area_sq_km)) * 100 AS forest_percentage
+    FROM forestation
+    GROUP BY 1, 2
+  ) sub
+  WHERE (sub.year = 1990 OR sub.year = 2016)
+)
+SELECT region,
+       year,
+       forest_percentage,
+       forest_percentage - LAG(forest_percentage) OVER
+       (PARTITION BY region ORDER BY forest_percentage) AS change
+FROM region_percent
+ORDER BY 1, 2
