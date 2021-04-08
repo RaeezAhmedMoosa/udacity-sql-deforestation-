@@ -801,3 +801,66 @@ SELECT country,
        RANK() OVER (ORDER BY percent_change DESC) AS percent_ranking
 FROM fapc
 WHERE (percent_change IS NOT NULL) AND (country != 'World')
+
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+
+a. a. Which 5 countries saw the largest amount decrease in forest area from 1990
+   to 2016? What was the difference in forest area for each?
+*/
+
+/*
+This query uses a SELECT DISCTINCT statement to cut away all the repetition of
+the country names when displayed alongside their region.
+
+With an ordinary 'SELECT country' statement, the query would return 27 rows of
+a specific country's name all containing the same region. This is far from ideal
+so this query cleans the data up so that it can be used as part of a larger
+query later.
+*/
+SELECT DISTINCT country,
+       region
+FROM forestation
+
+/*
+The table in the report requires not only the country name, but also each
+country's region. To achieve this, I have created a CTE which contains 2 tables.
+The first table 'fadc' (forest_area_data_change) has been used before. The 2nd
+table returns a table with each country listed along with their respective
+region.
+
+To obtain the table needed, the CTE tables are JOINed on the country column.
+Additionally countries with NULL values and the 'World' are excluded. The change
+value is ranked via the RANK() function, which identifies the countries most
+affected by deforestation by sorting the ranking in ascending order.
+*/
+WITH fadc AS
+(
+  SELECT country,
+         forest_area_2016 -forest_area_1990 AS change
+  FROM (
+    SELECT f90.country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f16.forest_area_sq_km AS forest_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+),
+     rgn AS
+(
+  SELECT DISTINCT country,
+         region
+  FROM forestation
+)
+SELECT fadc.country,
+       rgn.region,
+       fadc.change,
+       RANK() OVER (ORDER BY fadc.change ) AS ranking
+FROM fadc
+JOIN rgn
+ON fadc.country = rgn.country
+WHERE (fadc.change IS NOT NULL) AND (fadc.country != 'World')
