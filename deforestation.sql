@@ -1058,3 +1058,217 @@ JOIN rgn
 ON qtl.country = rgn.country
 WHERE qtl.quartile = '4th_quartile'
 ORDER BY 3 DESC;
+
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+
+e. How many countries had a percent forestation higher than the United States
+   in 2016?
+*/
+
+/*
+This query isolates the United States as a country and returns their 2016 forest
+area percentage. This query will be used as a foundation to create a Scalar
+Subquery which only returns the forest area percentage value.
+*/
+SELECT country,
+       year,
+       forest_percentage
+FROM forestation
+WHERE (country = 'United States' AND year = 2016)
+
+/*
+This query builds on the query above by using it as an Inline Subquery to return
+only the value of the USA's forest area percentage.
+*/
+SELECT ABS(sub1.forest_percentage) AS usa_fap
+FROM (
+  SELECT country,
+         year,
+         forest_percentage
+  FROM forestation
+  WHERE (country = 'United States' AND year = 2016)
+) sub1
+
+
+/*
+This query uses the above query as a Scalar Subquery to return a list of countries
+which have a forest area percentage greater than the USA. Again, this query will
+be used
+*/
+SELECT country,
+       year,
+       forest_percentage
+FROM forestation
+WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+      AND forest_percentage > (
+        SELECT ABS(sub1.forest_percentage) AS usa_fap
+        FROM (
+          SELECT country,
+                 year,
+                 forest_percentage
+          FROM forestation
+          WHERE (country = 'United States' AND year = 2016)
+        ) sub1
+      )
+ORDER BY 3 DESC;
+
+WITH gtusa AS
+(
+  SELECT country,
+         year,
+         forest_percentage
+  FROM forestation
+  WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+        AND forest_percentage > (
+          SELECT ABS(sub1.forest_percentage) AS usa_fap
+          FROM (
+            SELECT country,
+                   year,
+                   forest_percentage
+            FROM forestation
+            WHERE (country = 'United States' AND year = 2016)
+          ) sub1
+        )
+)
+SELECT COUNT(*) AS country_count
+FROM gtusa
+
+/*
+Below are a few queries which have been created to return the count of the
+number of countries within the database that have a forest percentage value of
+0.
+
+The reason I have created these queries is that I make a reference to the
+number of countries that have a 0 forest percentage value within the RECOMMENDATION
+portion of the report.
+*/
+SELECT country,
+       year,
+       forest_percentage
+FROM forestation
+WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+
+
+WITH nfa AS
+(
+  SELECT country,
+         forest_percentage
+  FROM (
+    SELECT country,
+           year,
+           forest_percentage
+    FROM forestation
+    WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+  ) sub
+  WHERE forest_percentage = 0
+)
+SELECT COUNT(*) AS no_forest_count
+FROM nfa
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+
+b. Which 5 countries saw the largest percent decrease in forest area from 1990
+   to 2016? What was the percent change to 2 decimal places for each?
+*/
+
+/*
+After posting on Udacity's Knowledge page about this question, I believe that
+I misunderstood the question. I need to modify my query such that it uses the
+following formula for Percentage Decrease over time:
+
+Percentage Decrease = [1 - (End % / Start %) * 100]
+
+I still don't quite understand this question 100%.
+*/
+
+/*
+This the standard query that I used to return all the applicable data for 1990
+and 2016 regarding forest and land area as well as forest area percentage for
+both years. This will be used as a subquery in a further query.
+*/
+SELECT f90.country AS country,
+       f90.forest_area_sq_km AS forest_area_1990,
+       f90.total_area_sq_km AS land_area_1990,
+       (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+       f16.forest_area_sq_km AS forest_area_2016,
+       (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+       f16.total_area_sq_km AS land_area_2016
+FROM forestation f90
+LEFT JOIN forestation f16
+ON f90.country = f16.country
+WHERE (f90.year = 1990) AND (f16.year = 2016)
+ORDER BY 1
+
+/*
+This query uses the query above as an Inline Subquery. My main aim with this
+query is to extract only the necessary data (1990 & 2016 values) and to calculate
+and verify the quotient when the 2016 forest area percentage is divided by the
+1990 forest area percentage.
+
+I am returning the quotient in this query as it will allow the creation of the
+finaly query to be much cleaner.
+*/
+SELECT sub.country AS country,
+       ROUND(CAST(sub.forest_percentage_1990 AS decimal), 2) AS forest_percent_1990,
+       ROUND(CAST(sub.forest_percentage_2016 AS decimal), 2) AS forest_percent_2016,
+       CAST(sub.forest_percentage_2016 / sub.forest_percentage_1990 AS decimal) AS quotient
+FROM (
+  SELECT f90.country AS country,
+         f90.forest_area_sq_km AS forest_area_1990,
+         f90.total_area_sq_km AS land_area_1990,
+         (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+         f16.forest_area_sq_km AS forest_area_2016,
+         (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+         f16.total_area_sq_km AS land_area_2016
+  FROM forestation f90
+  LEFT JOIN forestation f16
+  ON f90.country = f16.country
+  WHERE (f90.year = 1990) AND (f16.year = 2016)
+) sub
+
+/*
+This is the final query for Question 3(b). 'Leveraging' a CTE containing 2
+queries, the forest percentage change is calculated (which is made much easier
+by already having the quotient to work with) and the results are displayed,
+limited to 5 countries as per the question.
+*/
+WITH pad AS
+(
+  SELECT sub.country AS country,
+         ROUND(CAST(sub.forest_percentage_1990 AS decimal), 2) AS forest_percent_1990,
+         ROUND(CAST(sub.forest_percentage_2016 AS decimal), 2) AS forest_percent_2016,
+         CAST(sub.forest_percentage_2016 / sub.forest_percentage_1990 AS decimal) AS quotient
+  FROM (
+    SELECT f90.country AS country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f90.total_area_sq_km AS land_area_1990,
+           (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+           f16.forest_area_sq_km AS forest_area_2016,
+           (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+           f16.total_area_sq_km AS land_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+),
+     rgn AS
+(
+  SELECT DISTINCT country,
+         region
+  FROM forestation
+)
+SELECT pad.country,
+       rgn.region,
+       ROUND((1 - pad.quotient) * 100, 2) AS forest_area_percent_change
+FROM pad
+JOIN rgn
+ON pad.country = rgn.country
+WHERE (pad.country != 'World') AND (ROUND((1 - pad.quotient) * 100, 2) IS NOT NULL)
+ORDER BY 3 DESC
+LIMIT 5;
