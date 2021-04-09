@@ -839,7 +839,7 @@ affected by deforestation by sorting the ranking in ascending order.
 WITH fadc AS
 (
   SELECT country,
-         forest_area_2016 -forest_area_1990 AS change
+         forest_area_2016 - forest_area_1990 AS change
   FROM (
     SELECT f90.country,
            f90.forest_area_sq_km AS forest_area_1990,
@@ -864,3 +864,141 @@ FROM fadc
 JOIN rgn
 ON fadc.country = rgn.country
 WHERE (fadc.change IS NOT NULL) AND (fadc.country != 'World')
+
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+
+b. Which 5 countries saw the largest percent decrease in forest area from 1990
+   to 2016? What was the percent change to 2 decimal places for each?
+*/
+
+
+/*
+I need to return to this question later, as I am not sure if my query is right
+or if the question is incorrect.
+*/
+WITH fapc AS
+(
+  SELECT sub.country AS country,
+         ROUND(CAST(forest_percentage_2016 - forest_percentage_1990 AS decimal), 2) AS percent_change
+  FROM (
+    SELECT f90.country AS country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f90.total_area_sq_km AS land_area_1990,
+           (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+           f16.forest_area_sq_km AS forest_area_2016,
+           (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+           f16.total_area_sq_km AS land_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+),
+     rgn AS
+(
+  SELECT DISTINCT country,
+         region
+  FROM forestation
+)
+SELECT fapc.country,
+       rgn.region,
+       fapc.percent_change,
+       RANK() OVER (ORDER BY fapc.percent_change DESC) AS percent_ranking
+FROM fapc
+JOIN rgn
+ON fapc.country = rgn.country
+WHERE (fapc.percent_change IS NOT NULL) AND (fapc.country != 'World')
+
+
+
+/*
+3 COUNTRY-LEVEL DETAIL
+
+c. If countries were grouped by percent forestation in quartiles, which group
+   had the most countries in it in 2016?
+*/
+
+/*
+This query pulls the forest percentage per country for 2016. It's arranged in
+alphabetical order and the query is filtered
+*/
+SELECT country,
+       year,
+       forest_percentage
+FROM forestation
+WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+ORDER BY 1;
+
+
+/*
+This query was a failed attempt at resolving the data into quartiles. All this
+query did was split up the 204 countries into 4 parts.
+*/
+SELECT sub.country AS country,
+       sub.forest_percentage AS forest_percentage,
+       NTILE(4) OVER
+       (ORDER BY sub.forest_percentage) AS quartile,
+       CASE WHEN NTILE(4) OVER (ORDER BY sub.forest_percentage) = 1 THEN 'first_quartile'
+            WHEN NTILE(4) OVER (ORDER BY sub.forest_percentage) = 2 THEN 'second_quartile'
+            WHEN NTILE(4) OVER (ORDER BY sub.forest_percentage) = 3 THEN 'third_quartile'
+            ELSE 'fourth_quartile' END AS quartile_label
+FROM (
+  SELECT country,
+         year,
+         forest_percentage
+  FROM forestation
+  WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+) sub
+
+
+/*
+After understanding the question a bit better after my error above, this query
+uses a CASE statement to classify each country into a quartile according to
+their forest area percentage. The CASE statement results in the creation of a
+Derived Column whose row values are dependen on the WHEN/ELSE conditions being
+satisfied by a specific country.
+*/
+SELECT sub.country AS country,
+       sub.forest_percentage AS forest_percentage,
+       CASE WHEN sub.forest_percentage <= 25 THEN '1st_quartile'
+            WHEN sub.forest_percentage > 25 AND sub.forest_percentage <= 50 THEN '2nd_quartile'
+            WHEN sub.forest_percentage > 50 AND sub.forest_percentage < 75 THEN '3rd_quartile'
+            ELSE '4th_quartile' END AS quartile
+FROM (
+  SELECT country,
+         year,
+         forest_percentage
+  FROM forestation
+  WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+) sub
+ORDER BY 3
+
+
+/*
+Using the above query as a CTE, this query uses the COUNT function to return a
+count of each quartile. COUNT must be used in this case as the data type in the
+'quartile' column is a string, so SUM would not work in this case.
+*/
+WITH qtl AS (
+  SELECT sub.country AS country,
+         sub.forest_percentage AS forest_percentage,
+         CASE WHEN sub.forest_percentage <= 25 THEN '1st_quartile'
+              WHEN sub.forest_percentage > 25 AND sub.forest_percentage <= 50 THEN '2nd_quartile'
+              WHEN sub.forest_percentage > 50 AND sub.forest_percentage < 75 THEN '3rd_quartile'
+              ELSE '4th_quartile' END AS quartile
+  FROM (
+    SELECT country,
+           year,
+           forest_percentage
+    FROM forestation
+    WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+  ) sub
+)
+SELECT quartile,
+       COUNT(quartile) AS quartile_count
+FROM qtl
+GROUP BY 1
+ORDER BY 1;
