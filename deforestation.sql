@@ -935,7 +935,8 @@ ORDER BY 1;
 
 /*
 This query was a failed attempt at resolving the data into quartiles. All this
-query did was split up the 204 countries into 4 parts.
+query did was split up the 204 countries into 4 parts. This is not what I need
+in order to answer this question.
 */
 SELECT sub.country AS country,
        sub.forest_percentage AS forest_percentage,
@@ -1002,3 +1003,58 @@ SELECT quartile,
 FROM qtl
 GROUP BY 1
 ORDER BY 1;
+
+
+
+/*
+3. COUNTRY-LEVEL DETAIL
+
+d. List all of the countries that were in the 4th quartile (percent forest >
+   75%) in 2016.
+*/
+
+/*
+Using the CTE that was created in Question 3(c), containing the query which
+returns the quartile category for each country according to their forest
+percentage area, another query is added as a second table to this CTE which
+provides the region information for each country.
+
+The table in the project template for this section has a 'Region' column, thus
+the query itself must also return a list of countries, their region and their
+forest percentage area (being greater than 75%).
+
+This query uses the 2 subqueries contained in the CTE to return a list of all
+countries (including their region) which have a forest percentage area greater
+than 75% and it also display's the country's 2016 forest area percentage.
+*/
+WITH qtl AS
+(
+  SELECT sub.country AS country,
+         sub.forest_percentage AS forest_percentage,
+         CASE WHEN sub.forest_percentage <= 25 THEN '1st_quartile'
+              WHEN sub.forest_percentage > 25 AND sub.forest_percentage <= 50 THEN '2nd_quartile'
+              WHEN sub.forest_percentage > 50 AND sub.forest_percentage < 75 THEN '3rd_quartile'
+              ELSE '4th_quartile' END AS quartile
+  FROM (
+    SELECT country,
+           year,
+           forest_percentage
+    FROM forestation
+    WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+  ) sub
+),
+     rgn AS
+(
+  SELECT DISTINCT country,
+         region
+  FROM forestation
+)
+SELECT qtl.country,
+       rgn.region,
+       qtl.forest_percentage,
+       qtl.quartile
+FROM qtl
+JOIN rgn
+ON qtl.country = rgn.country
+WHERE qtl.quartile = '4th_quartile'
+ORDER BY 3 DESC;
