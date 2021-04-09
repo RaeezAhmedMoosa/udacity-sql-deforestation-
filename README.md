@@ -5,6 +5,19 @@ project is part of the Udacity "SQL" nanodegree program. This repo consists
 of the actual **SQL** code that is used for the project and the written **Report**
 that is to be submitted, which contains all the **SQL** code as an _Appendix_.
 
+## Project Information
+This is basically a simplified data analytics project which focuses on using
+**SQL** to analyse, manipulate and view data dealing with the issue of
+deforestation. This project consists of the **SQL** code used as queries to
+obtain the relevant data, and a written report where the data was used to provide
+feedback and analysis on deforestation.
+
+Briefly, I had to pretend that I was a data analyst working for a non-profit
+organisation which focuses on deforestation on a global, regional and country
+level basis. I had to write up a report for the organisation, and to write the
+report, I needed to use **SQL** to retrieve the data that was required as per
+the project instructions.
+
 ## Installation
 ### Non-GitHub Users
 If you are not familiar with GitHub, don't worry, I have got you covered. Just
