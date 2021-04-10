@@ -415,10 +415,11 @@ WITH qtl AS (
   FROM (
     SELECT country,
            year,
-           forest_percentage
+           CAST(forest_percentage AS decimal) AS forest_percentage
     FROM forestation
     WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
   ) sub
+  ORDER BY 3
 )
 SELECT quartile,
        COUNT(quartile) AS quartile_count
