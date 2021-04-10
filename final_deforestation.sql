@@ -10,7 +10,7 @@ SELECT la.country_code AS code,
        la.year AS year,
        ROUND(fa.forest_area_sqkm) AS forest_area_sq_km,
        ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
-       ROUND((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
+       ((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
 FROM land_area la
 FULL OUTER JOIN forest_area fa
 ON la.country_code = fa.country_code AND la.year = fa.year
@@ -48,6 +48,18 @@ SELECT country,
 FROM forestation
 WHERE (year = 2016 AND country = 'World');
 
+/*
+1. GLOBAL SITUATION
+
+c. What was the change (in sq km) in the forest area of the world from 1990 to
+   2016?
+*/
+SELECT country,
+       year,
+       forest_area_sq_km,
+       COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change
+FROM forestation
+WHERE (year = 1990 OR year = 2016) AND (country = 'World');
 
 /*
 1. GLOBAL SITUATION
