@@ -444,7 +444,7 @@ WITH qtl AS
   FROM (
     SELECT country,
            year,
-           forest_percentage
+            CAST(forest_percentage AS decimal) AS forest_percentage
     FROM forestation
     WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
   ) sub
@@ -457,7 +457,7 @@ WITH qtl AS
 )
 SELECT qtl.country,
        rgn.region,
-       qtl.forest_percentage,
+       ROUND(qtl.forest_percentage, 2) AS forest_percentage,
        qtl.quartile
 FROM qtl
 JOIN rgn
