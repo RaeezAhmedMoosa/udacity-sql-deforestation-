@@ -927,7 +927,7 @@ alphabetical order and the query is filtered
 */
 SELECT country,
        year,
-       forest_percentage
+       CAST(forest_percentage AS decimal) AS forest_percentage
 FROM forestation
 WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
 ORDER BY 1;
@@ -971,7 +971,7 @@ SELECT sub.country AS country,
 FROM (
   SELECT country,
          year,
-         forest_percentage
+         CAST(forest_percentage AS decimal) AS forest_percentage
   FROM forestation
   WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
 ) sub
@@ -1396,3 +1396,30 @@ SELECT country,
 FROM fapc
 WHERE (ROUND(quotient * 100, 2) IS NOT NULL) AND (country != 'World')
 ORDER BY 2 DESC
+
+
+/*
+This section is aimed at fixing Question 3(c)
+*/
+WITH qtl AS (
+  SELECT sub.country AS country,
+         sub.forest_percentage AS forest_percentage,
+         CASE WHEN sub.forest_percentage <= 25 THEN '1st_quartile'
+              WHEN sub.forest_percentage > 25 AND sub.forest_percentage <= 50 THEN '2nd_quartile'
+              WHEN sub.forest_percentage > 50 AND sub.forest_percentage < 75 THEN '3rd_quartile'
+              ELSE '4th_quartile' END AS quartile
+  FROM (
+    SELECT country,
+           year,
+           CAST(forest_percentage AS decimal) AS forest_percentage
+    FROM forestation
+    WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
+  ) sub
+  ORDER BY 3
+)
+SELECT quartile,
+       COUNT(quartile) AS quartile_count
+FROM qtl
+GROUP BY 1
+ORDER BY 1;
+  
