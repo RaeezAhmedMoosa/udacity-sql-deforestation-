@@ -1336,3 +1336,63 @@ FROM (
   WHERE (year = 1990 OR year = 2016) AND (country = 'World')
 ) sub
 ORDER BY 2;
+
+
+
+/*
+This section is aimed at fixing the 'Success Stories' issue
+*/
+SELECT f90.country AS country,
+       f90.forest_area_sq_km AS forest_area_1990,
+       f90.total_area_sq_km AS land_area_1990,
+       (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+       f16.forest_area_sq_km AS forest_area_2016,
+       (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+       f16.total_area_sq_km AS land_area_2016
+FROM forestation f90
+LEFT JOIN forestation f16
+ON f90.country = f16.country
+WHERE (f90.year = 1990) AND (f16.year = 2016) AND (country = 'Iceland')
+ORDER BY 1
+
+
+SELECT sub.country AS country,
+       CAST((sub.forest_area_2016 - sub.forest_area_1990) / sub.forest_area_1990 AS decimal) AS quotient
+FROM (
+  SELECT f90.country AS country,
+         f90.forest_area_sq_km AS forest_area_1990,
+         f90.total_area_sq_km AS land_area_1990,
+         (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+         f16.forest_area_sq_km AS forest_area_2016,
+         (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+         f16.total_area_sq_km AS land_area_2016
+  FROM forestation f90
+  LEFT JOIN forestation f16
+  ON f90.country = f16.country
+  WHERE (f90.year = 1990) AND (f16.year = 2016)
+) sub
+ORDER BY 1;
+
+
+WITH fapc AS (
+  SELECT sub.country AS country,
+         CAST((sub.forest_area_2016 - sub.forest_area_1990) / sub.forest_area_1990 AS decimal) AS quotient
+  FROM (
+    SELECT f90.country AS country,
+           f90.forest_area_sq_km AS forest_area_1990,
+           f90.total_area_sq_km AS land_area_1990,
+           (f90.forest_area_sq_km/f90.total_area_sq_km) * 100 AS forest_percentage_1990,
+           f16.forest_area_sq_km AS forest_area_2016,
+           (f16.forest_area_sq_km/f16.total_area_sq_km) * 100 AS forest_percentage_2016,
+           f16.total_area_sq_km AS land_area_2016
+    FROM forestation f90
+    LEFT JOIN forestation f16
+    ON f90.country = f16.country
+    WHERE (f90.year = 1990) AND (f16.year = 2016)
+  ) sub
+)
+SELECT country,
+       ROUND(quotient * 100, 2) AS percent_change
+FROM fapc
+WHERE (ROUND(quotient * 100, 2) IS NOT NULL) AND (country != 'World')
+ORDER BY 2 DESC
