@@ -1272,3 +1272,67 @@ ON pad.country = rgn.country
 WHERE (pad.country != 'World') AND (ROUND((1 - pad.quotient) * 100, 2) IS NOT NULL)
 ORDER BY 3 DESC
 LIMIT 5;
+
+
+
+/*
+I made a mistake when it comes to the initial calculation values that were used
+in the first version of this project. Using Rounded Off values worked for the
+most part, but the Reviewer picked up an issue with Question 3 (c).
+
+Also, I made a mistake in 'Success Stories' where I seem to have used the wrong
+year when it came to calculating the country with the highest forest area
+percentage. I used the 2016 land area instead of the 1990 land area.
+
+Let's fix these 2 issues.
+*/
+
+/*
+I need to modify the 'forestation' VIEW so that it will be able to return a
+forest area percentage value rounded off to 2 decimal places.
+*/
+CREATE VIEW forestation AS
+SELECT la.country_code AS code,
+       la.country_name AS country,
+       rg.region AS region,
+       rg.income_group AS income_group,
+       la.year AS year,
+       ROUND(fa.forest_area_sqkm) AS forest_area_sq_km,
+       ROUND(la.total_area_sq_mi * 2.5899) AS total_area_sq_km,
+       ((ROUND(fa.forest_area_sqkm) / ROUND(la.total_area_sq_mi * 2.5899)) * 100) AS forest_percentage
+FROM land_area la
+FULL OUTER JOIN forest_area fa
+ON la.country_code = fa.country_code AND la.year = fa.year
+FULL OUTER JOIN regions rg
+ON rg.country_code = la.country_code;
+
+
+/*
+1. GLOBAL SITUATION
+
+d.  What was the percent change in forest area of the world between 1990 and
+    2016?
+*/
+SELECT country,
+       year,
+       forest_area_sq_km,
+       COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change,
+       ((COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0)) / forest_area_sq_km) * 100 AS change_percentage
+FROM forestation
+WHERE (year = 1990 OR year = 2016) AND (country = 'World');
+
+SELECT sub.country,
+       sub.year,
+       sub.forest_area_sq_km,
+       sub.change,
+       ROUND(CAST(sub.change_percentage AS decimal), 2) AS change_percentage
+FROM (
+  SELECT country,
+         year,
+         forest_area_sq_km,
+         COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0) AS change,
+         ((COALESCE(forest_area_sq_km - LAG(forest_area_sq_km) OVER (ORDER BY year), 0)) / forest_area_sq_km) * 100 AS change_percentage
+  FROM forestation
+  WHERE (year = 1990 OR year = 2016) AND (country = 'World')
+) sub
+ORDER BY 2;
