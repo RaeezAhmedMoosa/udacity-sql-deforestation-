@@ -223,7 +223,7 @@ SELECT region,
        year,
        ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
 FROM region_sum
-WHERE year = 1990
+WHERE year = 1990 AND (region != 'World')
 ORDER BY 3 DESC;
 
 
@@ -244,7 +244,7 @@ SELECT region,
        year,
        ROUND(CAST(forest_percentage AS decimal), 2) AS forest_percentage
 FROM region_sum
-WHERE year = 1990
+WHERE year = 1990 AND (region != 'World')
 ORDER BY 3;
 
 
