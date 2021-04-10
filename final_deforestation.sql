@@ -498,7 +498,7 @@ FROM gtusa
 /*
 Below are a few queries which have been created to return the count of the
 number of countries within the database that have a forest percentage value of
-0.
+less than 1%.
 */
 WITH nfa AS
 (
@@ -511,7 +511,7 @@ WITH nfa AS
     FROM forestation
     WHERE (year = 2016) AND (forest_percentage IS NOT NULL) AND (country != 'World')
   ) sub
-  WHERE forest_percentage = 0
+  WHERE forest_percentage >= 0 AND forest_percentage < 1
 )
 SELECT COUNT(*) AS no_forest_count
 FROM nfa
